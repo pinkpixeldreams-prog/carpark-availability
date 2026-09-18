@@ -187,13 +187,67 @@ export default function App() {
     );
   };
 
-  // Simulate Real-Time Lot Updates (Cars entering & leaving)
-  const handleRefreshData = useCallback(() => {
+  // Fetch live carparks from /api/carparkavailability if key is configured, fallback smoothly
+  const handleRefreshData = useCallback(async () => {
     setIsRefreshing(true);
+    try {
+      const response = await fetch('/api/carparkavailability');
+      if (response.ok) {
+        const data = await response.json();
+        if (data && Array.isArray(data.value) && data.value.length > 0) {
+          // Map LTA DataMall items to our UI carparks
+          const ltaCarparks: Carpark[] = data.value.map((item: any) => {
+            const coords = item.Location ? item.Location.split(' ') : ['1.3048', '103.8318'];
+            const lat = parseFloat(coords[0]) || 1.3048;
+            const lng = parseFloat(coords[1]) || 103.8318;
+            const agency = (item.Agency || 'LTA').toUpperCase();
+            const agencyType = agency.includes('HDB') ? 'HDB' : agency.includes('URA') ? 'URA' : 'Commercial';
+
+            return {
+              id: item.CarParkID || `LTA-${Math.random()}`,
+              name: item.Development || 'Carpark',
+              code: item.CarParkID || '',
+              area: item.Area || 'Singapore',
+              agency: agencyType as any,
+              address: `${item.Development}, Singapore`,
+              latitude: lat,
+              longitude: lng,
+              totalLots: item.AvailableLots > 0 ? Math.max(item.AvailableLots, 100) : 100,
+              availableLots: item.AvailableLots || 0,
+              lastUpdated: 'Live from LTA',
+              rates: {
+                weekdayPeak: '$1.20 - $2.50 / hr',
+                weekdayOffPeak: '$0.60 - $1.20 / hr',
+                weekend: '$0.60 - $2.00 / hr',
+                gracePeriodMins: 10,
+              },
+              vehicleTypes: [
+                {
+                  type: (item.LotType === 'Y' ? 'Motorcycle' : item.LotType === 'H' ? 'Heavy' : 'Car') as VehicleType,
+                  totalLots: item.AvailableLots > 0 ? Math.max(item.AvailableLots, 100) : 100,
+                  availableLots: item.AvailableLots || 0,
+                },
+              ],
+            };
+          });
+
+          setCarparks(ltaCarparks);
+          if (ltaCarparks.length > 0) {
+            setSelectedCarpark(ltaCarparks[0]);
+          }
+          showToast(`Loaded ${ltaCarparks.length} live carparks from LTA DataMall!`, 'success');
+          setIsRefreshing(false);
+          return;
+        }
+      }
+    } catch (err) {
+      console.warn('Could not reach /api/carparkavailability, falling back to simulated live feed:', err);
+    }
+
+    // Fallback simulation if LTA key is not yet provided by user
     setTimeout(() => {
       setCarparks((prev) =>
         prev.map((cp) => {
-          // fluctuate availability by -3 to +3 lots (bounded between 0 and totalLots)
           const delta = Math.floor(Math.random() * 7) - 3;
           const newAvailable = Math.max(0, Math.min(cp.totalLots, cp.availableLots + delta));
 
@@ -214,7 +268,7 @@ export default function App() {
         })
       );
       setIsRefreshing(false);
-      showToast('Live lot availability refreshed!', 'success');
+      showToast('Live lot availability refreshed (Simulated)!', 'info');
     }, 600);
   }, []);
 

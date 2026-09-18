@@ -135,61 +135,63 @@ export const RatesInfoView: React.FC = () => {
           <div className="flex items-center gap-2">
             <Code2 className="w-5 h-5 text-blue-400" />
             <h3 className="text-base font-bold text-white">
-              Developer API Blueprint (Ready for Connection)
+              Serverless API Endpoints (/api)
             </h3>
           </div>
-          <span className="text-[11px] font-mono bg-blue-500/20 text-blue-300 px-2 py-0.5 rounded-sm border border-blue-500/40">
-            Frontend Ready
+          <span className="text-[11px] font-mono bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-sm border border-emerald-500/40">
+            Connected
           </span>
         </div>
 
         <p className="text-xs text-slate-300 leading-relaxed">
-          As noted in your prompt, this front end is pre-configured with the exact schema matching
-          both official Singapore carpark live availability endpoints:
+          The serverless API is configured under the root <code>/api</code> directory and forwards requests securely to LTA DataMall with your <code>AccountKey</code> header without exposing keys to the browser:
         </p>
 
         {/* Endpoints Table */}
         <div className="space-y-2 text-xs">
           <div className="bg-slate-800/80 p-3 rounded-xl border border-slate-700">
             <div className="font-semibold text-white mb-1 flex items-center justify-between">
-              <span>1. LTA DataMall - Car Park Availability API</span>
-              <span className="text-[10px] text-slate-400 font-mono">Real-time (1 min)</span>
+              <span>1. LTA Carpark Availability Proxy</span>
+              <span className="text-[10px] text-emerald-400 font-mono">Live Endpoint</span>
             </div>
             <code className="text-emerald-300 block font-mono text-[11px] break-all">
-              GET https://datamall2.mytransport.sg/ltaodataservice/CarParkAvailabilityv2
+              GET /api/carparkavailability
             </code>
             <p className="text-slate-400 text-[11px] mt-1">
-              Header required: <code>AccountKey: YOUR_DATAMALL_KEY</code>
+              Proxies upstream to: <code>https://datamall2.mytransport.sg/ltaodataservice/CarParkAvailabilityv2</code> using <code>AccountKey</code> from <code>process.env.LTA_ACCOUNT_KEY</code>. Supports pagination via <code>?$skip=500</code>.
             </p>
           </div>
 
           <div className="bg-slate-800/80 p-3 rounded-xl border border-slate-700">
             <div className="font-semibold text-white mb-1 flex items-center justify-between">
-              <span>2. GovTech Data.gov.sg - HDB Carpark Availability</span>
-              <span className="text-[10px] text-slate-400 font-mono">Real-time (1 min)</span>
+              <span>2. API Health Check</span>
+              <span className="text-[10px] text-emerald-400 font-mono">Live Endpoint</span>
             </div>
             <code className="text-emerald-300 block font-mono text-[11px] break-all">
-              GET https://api.data.gov.sg/v1/transport/carpark-availability
+              GET /api/health
             </code>
             <p className="text-slate-400 text-[11px] mt-1">
-              Public API (No key required for data.gov.sg v1)
+              Returns server status, timestamp, and service identity.
             </p>
           </div>
         </div>
 
         {/* Sample Payload */}
         <div className="bg-slate-950 p-3 rounded-xl border border-slate-800 font-mono text-[11px] text-slate-300 overflow-x-auto">
-          <div className="text-slate-500 mb-1">// Standard response format supported by this UI:</div>
+          <div className="text-slate-500 mb-1">// Response structure from GET /api/carparkavailability:</div>
           <pre>{`{
-  "carpark_data": [{
-    "carpark_number": "ION01",
-    "update_datetime": "2026-09-18T11:30:00",
-    "carpark_info": [{
-      "total_lots": "560",
-      "lot_type": "C",
-      "lots_available": "184"
-    }]
-  }]
+  "odata.metadata": "https://datamall2.mytransport.sg/ltaodataservice/$metadata#CarParkAvailabilityv2",
+  "value": [
+    {
+      "CarParkID": "1",
+      "Area": "Marina",
+      "Development": "Suntec City",
+      "Location": "1.29375 103.85718",
+      "AvailableLots": 372,
+      "LotType": "C",
+      "Agency": "LTA"
+    }
+  ]
 }`}</pre>
         </div>
       </div>
